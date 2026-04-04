@@ -1,0 +1,43 @@
+name: Build and Push Ingestor
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'components/ingestor/**'
+
+env:
+  PROJECT_ID: supernova-aperion-platform
+  GAR_LOCATION: us-central1 
+  REPOSITORY: supernova-repo
+  SERVICE_NAME: ingestor
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        # Traceback: Project 990931732148 | Pool: supernova-pool
+        workload_identity_provider: 'projects/990931732148/locations/global/workloadIdentityPools/supernova-pool/providers/github-provider'
+        service_account: 'supernova-gke-sa@supernova-aperion-platform.iam.gserviceaccount.com'
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker
+      run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+    - name: Build and Push Docker Image
+      run: |
+        docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }} ./components/ingestor
+        docker push $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }}

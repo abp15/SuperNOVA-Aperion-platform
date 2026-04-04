@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingestor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ingestor
+  template:
+    metadata:
+      labels:
+        app: ingestor
+    spec:
+      containers:
+      - name: ingestor
+        image: us-central1-docker.pkg.dev/supernova-aperion-platform/supernova-repo/ingestor:latest
+        env:
+        - name: REDIS_HOST
+          value: "10.127.0.3"
+        - name: REDIS_PORT
+          value: "6379"
