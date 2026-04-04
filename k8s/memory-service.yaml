@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memory-service
+  labels:
+    app: memory-service
+spec:
+  replicas: 2
+  selector:
+    match_labels:
+      app: memory-service
+  template:
+    metadata:
+      labels:
+        app: memory-service
+    spec:
+      serviceAccountName: supernova-ksa  # Using the identity we bound earlier!
+      containers:
+      - name: memory-service
+        image: us-central1-docker.pkg.dev/supernova-aperion-platform/supernova-repo/memory-service:latest
+        ports:
+        - container_port: 8000
+        env:
+        - name: REDIS_HOST
+          value: "10.x.x.x" # We will get this from your Terraform output!
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: memory-service
+spec:
+  selector:
+    app: memory-service
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
