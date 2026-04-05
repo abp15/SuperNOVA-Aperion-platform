@@ -1,19 +1,22 @@
-name: Build and Push Memory Service
+name: Build and Deploy Memory Service
 
 on:
   push:
     branches: [ main ]
     paths:
-      - 'services/cognitive/memory-service/**' # Corrected path
+      - 'services/cognitive/memory-service/**'
 
 env:
   PROJECT_ID: supernova-aperion-platform
   GAR_LOCATION: us-central1 
+  GKE_CLUSTER: supernova-cluster
+  GKE_ZONE: us-central1
   REPOSITORY: supernova-repo
-  SERVICE_NAME: memory-service # Changed name to match your folder
+  SERVICE_NAME: memory-service
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-push:
+  build-deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -38,6 +41,21 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        # Building from the correct subdirectory
         docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }} ./services/cognitive/memory-service
         docker push $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }}
+
+    # --- NEW DEPLOYMENT STEPS ---
+    - name: Get GKE Credentials
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_ZONE }}
+
+    - name: Deploy to GKE
+      run: |
+        # Update the deployment with the new image tag
+        kubectl set image deployment/memory-service \
+          memory-service-container=$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }}
+        
+        # Ensure the deployment is ready
+        kubectl rollout status deployment/memory-service

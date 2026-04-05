@@ -4,14 +4,14 @@ provider "google" {
   region  = var.region
 }
 
-# --- NEW: Enable Required APIs via Terraform ---
+# --- Enable Required APIs via Terraform ---
 resource "google_project_service" "services" {
   for_each = toset([
     "artifactregistry.googleapis.com",
-    "servicenetworking.googleapis.com", # Fixes your current error
+    "servicenetworking.googleapis.com", 
     "redis.googleapis.com",
     "container.googleapis.com",
-    "iamcredentials.googleapis.com"     # Required for GitHub Actions
+    "iamcredentials.googleapis.com"     
   ])
   service            = each.key
   disable_on_destroy = false
@@ -84,7 +84,7 @@ resource "google_service_account" "gke_sa" {
   display_name = "GKE Node Service Account"
 }
 
-# 5.5 Private Service Access (Fixes the Error)
+# 5.5 Private Service Access (Internal Corridor for Redis)
 resource "google_compute_global_address" "private_ip_alloc" {
   name          = "google-managed-services-supernova-vpc"
   purpose       = "VPC_PEERING"
@@ -109,28 +109,40 @@ resource "google_redis_instance" "chat_cache" {
   authorized_network = google_compute_network.vpc.id
   connect_mode       = "PRIVATE_SERVICE_ACCESS"
   
+  # Ensures the peering is active before creating Redis
   depends_on = [google_service_networking_connection.private_vpc_connection]
 }
 
-# --- NEW: Workload Identity for CI/CD Pipeline ---
+# 7. Workload Identity Pool
 resource "google_iam_workload_identity_pool" "github_pool" {
   workload_identity_pool_id = "supernova-pool"
   display_name              = "SuperNOVA GitHub Pool"
 }
 
+
+# KEEP THIS ONE (Lines 135-151) [cite: 9]
 resource "google_iam_workload_identity_pool_provider" "github_provider" {
   workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
   workload_identity_pool_provider_id = "github-provider"
+  
   attribute_mapping = {
     "google.subject"       = "assertion.sub"
+    "attribute.actor"      = "assertion.actor"
     "attribute.repository" = "assertion.repository"
   }
+  
+  attribute_condition = "assertion.repository_owner == 'abp15'"
+
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
 }
 
-# Export the Redis IP
+
+
+
+
+# Outputs
 output "redis_ip" {
   value = google_redis_instance.chat_cache.host
 }

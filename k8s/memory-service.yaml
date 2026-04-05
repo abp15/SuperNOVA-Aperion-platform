@@ -14,15 +14,15 @@ spec:
       labels:
         app: memory-service
     spec:
-      serviceAccountName: supernova-ksa  # Using the identity we bound earlier!
+      serviceAccountName: supernova-ksa  # Ensure this KSA is created in the cluster
       containers:
-      - name: memory-service
+      - name: memory-service-container  # Aligned with deploy.yml for automation
         image: us-central1-docker.pkg.dev/supernova-aperion-platform/supernova-repo/memory-service:latest
         ports:
-        - container_port: 8000
+        - containerPort: 8000
         env:
         - name: REDIS_HOST
-          value: "10.x.x.x" # We will get this from your Terraform output!
+          value: "10.127.0.3" # Injected from your Terraform output
 ---
 apiVersion: v1
 kind: Service
