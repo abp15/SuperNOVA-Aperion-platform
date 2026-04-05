@@ -1,16 +1,16 @@
-name: Build and Push Ingestor
+name: Build and Push Memory Service
 
 on:
   push:
     branches: [ main ]
     paths:
-      - 'components/ingestor/**'
+      - 'services/cognitive/memory-service/**' # Corrected path
 
 env:
   PROJECT_ID: supernova-aperion-platform
   GAR_LOCATION: us-central1 
   REPOSITORY: supernova-repo
-  SERVICE_NAME: ingestor
+  SERVICE_NAME: memory-service # Changed name to match your folder
 
 jobs:
   build-push:
@@ -27,7 +27,6 @@ jobs:
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v2'
       with:
-        # Traceback: Project 990931732148 | Pool: supernova-pool
         workload_identity_provider: 'projects/990931732148/locations/global/workloadIdentityPools/supernova-pool/providers/github-provider'
         service_account: 'supernova-gke-sa@supernova-aperion-platform.iam.gserviceaccount.com'
 
@@ -39,5 +38,6 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }} ./components/ingestor
+        # Building from the correct subdirectory
+        docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }} ./services/cognitive/memory-service
         docker push $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }}
