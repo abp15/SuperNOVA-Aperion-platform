@@ -53,12 +53,11 @@ jobs:
 
     - name: Deploy to GKE
       run: |
-        # 1. Create or update the Deployment and Service from your YAML file
+        # 1. Dynamically replace the generic 'latest' tag with your specific Git SHA
+        sed -i "s|image: .*|image: $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }}|g" k8s/memory-service.yaml
+        
+        # 2. Apply the file. This creates the deployment if it's missing, or updates it if it exists.
         kubectl apply -f k8s/memory-service.yaml
         
-        # 2. Specifically point the Deployment to the new Docker image we just pushed
-        kubectl set image deployment/memory-service \
-          memory-service-container=$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }}
-        
-        # 3. Monitor the rollout until it's finished
+        # 3. Wait for the new pods to spin up securely
         kubectl rollout status deployment/memory-service
