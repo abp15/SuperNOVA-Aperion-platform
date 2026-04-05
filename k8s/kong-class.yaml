@@ -1,0 +1,6 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kong
+spec:
+  controllerName: konghq.com/gateway-controller # This is the "Secret Key"
