@@ -5,6 +5,9 @@ on:
     branches: [ main ]
     paths:
       - 'services/cognitive/memory-service/**'
+      - 'k8s/memory-service.yaml'          # Trigger if you change Replicas, IPs, etc.
+      - '.github/workflows/deploy.yml'     # Trigger if you update the Action
+
 
 env:
   PROJECT_ID: supernova-aperion-platform
