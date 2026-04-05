@@ -53,12 +53,12 @@ jobs:
 
     - name: Deploy to GKE
       run: |
-        # 1. Apply the manifest to create/update the Deployment and Service
+        # 1. Create or update the Deployment and Service from your YAML file
         kubectl apply -f k8s/memory-service.yaml
         
-        # 2. Force the update to the specific image we just built
+        # 2. Specifically point the Deployment to the new Docker image we just pushed
         kubectl set image deployment/memory-service \
           memory-service-container=$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }}
         
-        # 3. Check the status
+        # 3. Monitor the rollout until it's finished
         kubectl rollout status deployment/memory-service
